@@ -74,3 +74,74 @@ TEST_CASE("Example: Print Prompt Ledger", "[ex-3]") {
   atm.PrintLedger("./prompt.txt", 12345678, 1234);
   REQUIRE(CompareFiles("./ex-1.txt", "./prompt.txt"));
 }
+
+TEST_CASE("RegisterAccount: Duplicate account should throw", "[reg-1]") {
+  Atm atm;
+  atm.RegisterAccount(11111111, 2222, "Alice", 100);
+  REQUIRE_THROWS_AS(atm.RegisterAccount(11111111, 2222, "Alice", 200), std::invalid_argument);
+}
+
+TEST_CASE("WithdrawCash: Negative withdrawal should throw", "[with-1]") {
+  Atm atm;
+  atm.RegisterAccount(12345678, 1234, "Sam Sepiol", 500);
+  REQUIRE_THROWS_AS(atm.WithdrawCash(12345678, 1234, -50), std::invalid_argument);
+}
+
+TEST_CASE("WithdrawCash: Overdraft should throw runtime_error", "[with-2]") {
+  Atm atm;
+  atm.RegisterAccount(12345678, 1234, "Sam Sepiol", 100);
+  REQUIRE_THROWS_AS(atm.WithdrawCash(12345678, 1234, 200), std::runtime_error);
+}
+
+TEST_CASE("WithdrawCash: Invalid credentials should throw", "[with-3]") {
+  Atm atm;
+  atm.RegisterAccount(12345678, 1234, "Sam Sepiol", 100);
+  REQUIRE_THROWS_AS(atm.WithdrawCash(12345678, 9999, 50), std::invalid_argument);
+}
+
+TEST_CASE("DepositCash: Negative deposit should throw", "[dep-1]") {
+  Atm atm;
+  atm.RegisterAccount(12345678, 1234, "Sam Sepiol", 300);
+  REQUIRE_THROWS_AS(atm.DepositCash(12345678, 1234, -100), std::invalid_argument);
+}
+
+TEST_CASE("DepositCash: Valid deposit updates balance", "[dep-2]") {
+  Atm atm;
+  atm.RegisterAccount(12345678, 1234, "Sam Sepiol", 300);
+  atm.DepositCash(12345678, 1234, 200);
+  auto accounts = atm.GetAccounts();
+  REQUIRE(accounts[{12345678, 1234}].balance == 500);
+}
+
+TEST_CASE("DepositCash: Invalid credentials should throw", "[dep-3]") {
+  Atm atm;
+  atm.RegisterAccount(12345678, 1234, "Sam Sepiol", 300);
+  REQUIRE_THROWS_AS(atm.DepositCash(87654321, 4321, 100), std::invalid_argument);
+}
+
+TEST_CASE("PrintLedger: Nonexistent account should throw", "[led-1]") {
+  Atm atm;
+  REQUIRE_THROWS_AS(atm.PrintLedger("./ledger.txt", 11111111, 2222), std::invalid_argument);
+}
+
+TEST_CASE("Transactions: Ledger should contain both deposits and withdrawals", "[led-2]") {
+  Atm atm;
+  atm.RegisterAccount(12345678, 1234, "Sam Sepiol", 1000);
+  atm.DepositCash(12345678, 1234, 500);
+  atm.WithdrawCash(12345678, 1234, 200);
+  atm.PrintLedger("./ledger_test.txt", 12345678, 1234);
+  REQUIRE(CompareFiles("./expected_ledger.txt", "./ledger_test.txt"));
+}
+
+TEST_CASE("CheckBalance: Invalid credentials should throw", "[bal-1]") {
+  Atm atm;
+  atm.RegisterAccount(11111111, 2222, "Alice", 100);
+  REQUIRE_THROWS_AS(atm.CheckBalance(11111111, 9999), std::invalid_argument);
+}
+
+TEST_CASE("CheckBalance: Valid credentials return correct balance", "[bal-2]") {
+  Atm atm;
+  atm.RegisterAccount(11111111, 2222, "Alice", 250.75);
+  REQUIRE(atm.CheckBalance(11111111, 2222) == 250.75);
+}
+
